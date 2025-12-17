@@ -1,0 +1,5 @@
+{
+  "name": "GestorCondo",
+  "description": "Sistema de gestão de múltiplos condomínios com controle de acesso hierárquico (Admin/Síndico/Morador).",
+  "requestFramePermissions": []
+}

@@ -1,0 +1,13 @@
+:root {
+  --brand-primary: #2563eb; /* default primary color */
+}
+
+.bg-primary {
+  background-color: var(--brand-primary);
+}
+
+.text-primary {
+  color: var(--brand-primary);
+}
+
+/* Example usage: replace Tailwind primary classes with these utility classes */
