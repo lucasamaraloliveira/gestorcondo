@@ -52,7 +52,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
     // Determine sidebar content structure
     const sidebarContent = (
-        <div className={`flex flex-col w-full h-full ${!isMobileOpen ? 'rounded-3xl border border-white/10 dark:border-slate-700 shadow-2xl' : ''} bg-slate-900/90 dark:bg-slate-900/95 backdrop-blur-xl text-white overflow-hidden relative z-10`}>
+        <div className={`flex flex-col w-full h-full ${!isMobileOpen ? 'rounded-3xl border border-white/10 dark:border-slate-700 shadow-lg' : ''} bg-slate-900/90 dark:bg-slate-900/95 backdrop-blur-xl text-white overflow-hidden relative z-10`}>
 
             {/* Header */}
             <div className={`p-6 border-b border-white/10 dark:border-slate-700 flex items-center relative z-10 transition-all duration-300 ${isCollapsed && !isMobileOpen ? 'justify-center flex-col gap-4 px-2' : 'justify-between'}`}>
