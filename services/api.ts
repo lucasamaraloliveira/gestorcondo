@@ -1,28 +1,105 @@
 import { MOCK_USERS, MOCK_CONDOS, DEFAULT_PERMISSIONS, MOCK_EVENTS, MOCK_NOTIFICATIONS, MOCK_BILLS, MOCK_TICKETS, MOCK_DOCUMENTS } from '../constants';
-import { User, Condominium, UserRole, RolePermissions, CalendarEvent, Notification, Bill, SupportTicket, TicketStatus, CondoDocument } from '../types';
+import { User, Condominium, UserRole, RolePermissions, CalendarEvent, Notification, Bill, SupportTicket, TicketStatus, CondoDocument, PaginatedResponse, Visitor, MarketplaceItem, Poll } from '../types';
 
 // Simulando delay de rede para parecer uma aplicação real conectada ao banco
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-// Simple in-memory storage
-let currentPermissions = { ...DEFAULT_PERMISSIONS };
-let currentEvents = [...MOCK_EVENTS];
-let currentNotifications = [...MOCK_NOTIFICATIONS];
-let currentCondos: Condominium[] = MOCK_CONDOS.map(c => ({
+// Helper for LocalStorage persistence
+const saveToStorage = (key: string, data: any) => {
+  localStorage.setItem(`gc_${key}`, JSON.stringify(data));
+};
+
+const getFromStorage = (key: string, defaultValue: any) => {
+  const stored = localStorage.getItem(`gc_${key}`);
+  return stored ? JSON.parse(stored) : defaultValue;
+};
+
+// Simple in-memory storage (initialized from LocalStorage)
+let currentPermissions = getFromStorage('permissions', { ...DEFAULT_PERMISSIONS });
+let currentEvents = getFromStorage('events', [...MOCK_EVENTS]);
+let currentNotifications = getFromStorage('notifications', [...MOCK_NOTIFICATIONS]);
+let currentCondos: Condominium[] = getFromStorage('condos', MOCK_CONDOS.map(c => ({
   ...c,
-  features: c.features || { isChatEnabled: true } // Default enable for existing mocks if missing
-}));
-// Inicializa usuários mockados como já tendo visto o tour para não atrapalhar testes de regressão,
-// mas novos usuários (criados via register/createUser) terão hasSeenTour: false.
-let currentUsers: User[] = MOCK_USERS.map(u => ({ ...u, hasSeenTour: true }));
-let currentBills = [...MOCK_BILLS];
-let currentTickets = [...MOCK_TICKETS];
-let currentDocuments = [...MOCK_DOCUMENTS];
+  features: c.features || { isChatEnabled: true }
+})));
+let currentUsers: User[] = getFromStorage('users', MOCK_USERS.map(u => ({ ...u, hasSeenTour: true })));
+let currentBills = getFromStorage('bills', [...MOCK_BILLS]);
+let currentTickets = getFromStorage('tickets', [...MOCK_TICKETS]);
+let currentDocuments = getFromStorage('documents', [...MOCK_DOCUMENTS]);
+let currentVisitors: Visitor[] = getFromStorage('visitors', [
+  { id: '1', condominiumId: '1', name: 'Roberto Silva', cpf: '123.456.789-00', type: 'VISITOR', hostUnit: 'Bl A - 302', entryDate: '2023-12-20T14:00:00', status: 'SCHEDULED', qrCodeUrl: 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=VISIT-1' },
+  { id: '2', condominiumId: '1', name: 'Tech Internet', cpf: '987.654.321-99', type: 'SERVICE', hostUnit: 'Bl B - 101', entryDate: '2023-12-18T09:30:00', status: 'INSIDE', qrCodeUrl: 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=SERVICE-2' },
+  { id: '3', condominiumId: '1', name: 'iFood Entregador', cpf: '000.000.000-00', type: 'DELIVERY', hostUnit: 'Bl C - 505', entryDate: '2023-12-18T20:15:00', status: 'EXITED' },
+]);
+let currentMarketplaceItems: MarketplaceItem[] = getFromStorage('marketplace', [
+  {
+    id: '1',
+    condominiumId: '1',
+    userId: 'u3',
+    userName: 'Ana - 101 A',
+    userContact: '(11) 98765-4321',
+    title: 'Sofá 3 Lugares Retrátil',
+    description: 'Sofá cinza em ótimo estado, usado por 1 ano. Motivo: mudança.',
+    price: 1200,
+    category: 'FURNITURE',
+    images: ['https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&q=80&w=400'],
+    status: 'ACTIVE',
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: '2',
+    condominiumId: '1',
+    userId: 'u4',
+    userName: 'Marcos - 205 B',
+    userContact: '(11) 99999-8888',
+    title: 'PlayStation 5',
+    description: 'PS5 com 1 controle e 2 jogos. Pouco uso.',
+    price: 3500,
+    category: 'ELECTRONICS',
+    images: ['https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?auto=format&fit=crop&q=80&w=400'],
+    status: 'ACTIVE',
+    createdAt: new Date(Date.now() - 86400000).toISOString()
+  }
+]);
+let currentPolls: Poll[] = getFromStorage('polls', [
+  {
+    id: '1',
+    condominiumId: '1',
+    title: 'Reforma do Salão de Festas',
+    description: 'Aprovação do orçamento para pintura e troca de piso do salão de festas principal.',
+    options: [
+      { id: 'opt1', text: 'Aprovar Orçamento A (R$ 15.000)', votes: 12 },
+      { id: 'opt2', text: 'Aprovar Orçamento B (R$ 12.000)', votes: 8 },
+      { id: 'opt3', text: 'Rejeitar ambos', votes: 3 }
+    ],
+    startDate: '2023-12-01T00:00:00',
+    endDate: '2023-12-30T23:59:59',
+    status: 'OPEN',
+    createdBy: 'u1',
+    anonymous: false
+  }
+]);
+
+// Helper for pagination
+const paginate = <T>(items: T[], page: number = 1, limit: number = 10): PaginatedResponse<T> => {
+  const total = items.length;
+  const totalPages = Math.ceil(total / limit);
+  const offset = (page - 1) * limit;
+  const data = items.slice(offset, offset + limit);
+
+  return {
+    data,
+    total,
+    page,
+    limit,
+    totalPages
+  };
+};
 
 export const api = {
-  getUsers: async (): Promise<User[]> => {
+  getUsers: async (page: number = 1, limit: number = 10): Promise<PaginatedResponse<User>> => {
     await delay(600);
-    return [...currentUsers];
+    return paginate([...currentUsers], page, limit);
   },
 
   createUser: async (user: Omit<User, 'id' | 'createdAt' | 'avatarUrl'>): Promise<User> => {
@@ -256,9 +333,9 @@ export const api = {
   },
 
   // Financial API
-  getAllBills: async (): Promise<Bill[]> => {
+  getAllBills: async (page: number = 1, limit: number = 10): Promise<PaginatedResponse<Bill>> => {
     await delay(500);
-    return [...currentBills];
+    return paginate([...currentBills], page, limit);
   },
 
   getUserBills: async (userId: string): Promise<Bill[]> => {
@@ -281,9 +358,10 @@ export const api = {
   },
 
   // Documents API
-  getDocuments: async (condominiumId: string): Promise<CondoDocument[]> => {
+  getDocuments: async (condominiumId: string, page: number = 1, limit: number = 10): Promise<PaginatedResponse<CondoDocument>> => {
     await delay(400);
-    return currentDocuments.filter(d => d.condominiumId === condominiumId);
+    const filtered = currentDocuments.filter(d => d.condominiumId === condominiumId);
+    return paginate(filtered, page, limit);
   },
 
   createDocument: async (docData: Omit<CondoDocument, 'id'>): Promise<CondoDocument> => {
@@ -372,11 +450,10 @@ export const api = {
   // --- NEW PERSISTENCE METHODS ---
 
   // Access Control (Visitors)
-  getVisitors: async (condominiumId: string): Promise<Visitor[]> => {
+  getVisitors: async (condominiumId: string, page: number = 1, limit: number = 10): Promise<PaginatedResponse<Visitor>> => {
     await delay(300);
-    // Return all visitors for now, filtering usually happens on frontend or here
-    // But for strict isolation, let's filter here if needed, or return all like events
-    return [...currentVisitors];
+    const filtered = currentVisitors.filter(v => v.condominiumId === condominiumId);
+    return paginate(filtered, page, limit);
   },
 
   createVisitor: async (visitor: Omit<Visitor, 'id'>): Promise<Visitor> => {
@@ -403,9 +480,10 @@ export const api = {
   },
 
   // Marketplace
-  getMarketplaceItems: async (condominiumId: string): Promise<MarketplaceItem[]> => {
+  getMarketplaceItems: async (condominiumId: string, page: number = 1, limit: number = 10): Promise<PaginatedResponse<MarketplaceItem>> => {
     await delay(400);
-    return [...currentMarketplaceItems];
+    const filtered = currentMarketplaceItems.filter(i => i.condominiumId === condominiumId);
+    return paginate(filtered, page, limit);
   },
 
   createMarketplaceItem: async (item: Omit<MarketplaceItem, 'id' | 'createdAt' | 'status'>): Promise<MarketplaceItem> => {
@@ -448,64 +526,25 @@ export const api = {
     newOptions[optionIndex] = { ...newOptions[optionIndex], votes: newOptions[optionIndex].votes + 1 };
 
     currentPolls[pollIndex] = { ...poll, options: newOptions };
+  },
+
+  payBill: async (billId: string, userId: string): Promise<void> => {
+    await delay(1500);
+    // Update bill
+    const billIdx = currentBills.findIndex(b => b.id === billId);
+    if (billIdx !== -1) {
+      currentBills[billIdx] = { ...currentBills[billIdx], status: 'PAID' };
+    }
+
+    // Check if user still has overdue bills (LATE)
+    const userOverdue = currentBills.some(b => b.userId === userId && b.status === 'LATE' && b.id !== billId);
+
+    // Update user status if no more overdue bills
+    if (!userOverdue) {
+      const userIdx = currentUsers.findIndex(u => u.id === userId);
+      if (userIdx !== -1) {
+        currentUsers[userIdx].financialStatus = 'PAID';
+      }
+    }
   }
 };
-
-// Initial Mock Data for new modules
-import { Visitor, MarketplaceItem, Poll } from '../types';
-
-let currentVisitors: Visitor[] = [
-  { id: '1', condominiumId: '1', name: 'Roberto Silva', cpf: '123.456.789-00', type: 'VISITOR', hostUnit: 'Bl A - 302', entryDate: '2023-12-20T14:00:00', status: 'SCHEDULED', qrCodeUrl: 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=VISIT-1' },
-  { id: '2', condominiumId: '1', name: 'Tech Internet', cpf: '987.654.321-99', type: 'SERVICE', hostUnit: 'Bl B - 101', entryDate: '2023-12-18T09:30:00', status: 'INSIDE', qrCodeUrl: 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=SERVICE-2' },
-  { id: '3', condominiumId: '1', name: 'iFood Entregador', cpf: '000.000.000-00', type: 'DELIVERY', hostUnit: 'Bl C - 505', entryDate: '2023-12-18T20:15:00', status: 'EXITED' },
-];
-
-let currentMarketplaceItems: MarketplaceItem[] = [
-  {
-    id: '1',
-    condominiumId: '1',
-    userId: 'u3',
-    userName: 'Ana - 101 A',
-    userContact: '(11) 98765-4321',
-    title: 'Sofá 3 Lugares Retrátil',
-    description: 'Sofá cinza em ótimo estado, usado por 1 ano. Motivo: mudança.',
-    price: 1200,
-    category: 'FURNITURE',
-    images: ['https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&q=80&w=400'],
-    status: 'ACTIVE',
-    createdAt: new Date().toISOString()
-  },
-  {
-    id: '2',
-    condominiumId: '1',
-    userId: 'u4',
-    userName: 'Marcos - 205 B',
-    userContact: '(11) 99999-8888',
-    title: 'PlayStation 5',
-    description: 'PS5 com 1 controle e 2 jogos. Pouco uso.',
-    price: 3500,
-    category: 'ELECTRONICS',
-    images: ['https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?auto=format&fit=crop&q=80&w=400'],
-    status: 'ACTIVE',
-    createdAt: new Date(Date.now() - 86400000).toISOString()
-  }
-];
-
-let currentPolls: Poll[] = [
-  {
-    id: '1',
-    condominiumId: '1',
-    title: 'Reforma do Salão de Festas',
-    description: 'Aprovação do orçamento para pintura e troca de piso do salão de festas principal.',
-    options: [
-      { id: 'opt1', text: 'Aprovar Orçamento A (R$ 15.000)', votes: 12 },
-      { id: 'opt2', text: 'Aprovar Orçamento B (R$ 12.000)', votes: 8 },
-      { id: 'opt3', text: 'Rejeitar ambos', votes: 3 }
-    ],
-    startDate: '2023-12-01T00:00:00',
-    endDate: '2023-12-30T23:59:59',
-    status: 'OPEN',
-    createdBy: 'u1',
-    anonymous: false
-  }
-];

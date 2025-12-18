@@ -154,64 +154,64 @@ const UserModal: React.FC<UserModalProps> = ({ isOpen, onClose, onSave, currentU
 
             {/* Divider */}
             <div className="border-t border-slate-100 dark:border-slate-700 pt-2">
-                <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Vinculação</h4>
-                
-                {/* Condominium Selection */}
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Condomínio</label>
-                  <div className="relative">
-                    <select
-                      className={`w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none text-slate-900 dark:text-white ${!canEditCondo ? 'bg-slate-100 dark:bg-slate-700 text-slate-500 cursor-not-allowed' : 'bg-white dark:bg-slate-900'}`}
-                      value={formData.condominiumId}
-                      disabled={!canEditCondo}
-                      onChange={e => setFormData({ ...formData, condominiumId: e.target.value })}
-                    >
-                      <option value="">Selecione...</option>
-                      {condos.map(c => (
-                        <option key={c.id} value={c.id}>{c.name}</option>
-                      ))}
-                    </select>
-                    <Building className="absolute right-3 top-2.5 w-4 h-4 text-slate-400 pointer-events-none" />
-                  </div>
-                  {/* Feedback Message about isolation */}
-                  {selectedCondoName && isResident && (
-                      <p className="text-xs text-blue-600 dark:text-blue-400 mt-1 flex items-center">
-                          <Shield className="w-3 h-3 mr-1" />
-                          Este usuário verá apenas informações do <strong>{selectedCondoName}</strong>.
-                      </p>
-                  )}
-                </div>
+              <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Vinculação</h4>
 
-                {/* Unit/Apartment & Block */}
-                {isResident && (
-                  <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Bloco / Torre</label>
-                        <div className="relative">
-                            <input
-                            type="text"
-                            className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-slate-900 dark:text-white"
-                            placeholder="Ex: Bloco A"
-                            value={formData.block || ''}
-                            onChange={e => setFormData({ ...formData, block: e.target.value })}
-                            />
-                        </div>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Unidade / Apto</label>
-                        <div className="relative">
-                            <input
-                            type="text"
-                            className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-slate-900 dark:text-white"
-                            placeholder="Ex: 104"
-                            value={formData.unitId || ''}
-                            onChange={e => setFormData({ ...formData, unitId: e.target.value })}
-                            />
-                            <MapPin className="absolute right-3 top-2.5 w-4 h-4 text-slate-400 pointer-events-none" />
-                        </div>
-                      </div>
-                  </div>
+              {/* Condominium Selection */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Condomínio</label>
+                <div className="relative">
+                  <select
+                    className={`w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none text-slate-900 dark:text-white ${!canEditCondo ? 'bg-slate-100 dark:bg-slate-700 text-slate-500 cursor-not-allowed' : 'bg-white dark:bg-slate-900'}`}
+                    value={formData.condominiumId}
+                    disabled={!canEditCondo}
+                    onChange={e => setFormData({ ...formData, condominiumId: e.target.value })}
+                  >
+                    <option value="">Selecione...</option>
+                    {condos.map(c => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </select>
+                  <Building className="absolute right-3 top-2.5 w-4 h-4 text-slate-400 pointer-events-none" />
+                </div>
+                {/* Feedback Message about isolation */}
+                {selectedCondoName && isResident && (
+                  <p className="text-xs text-blue-600 dark:text-blue-400 mt-1 flex items-center">
+                    <Shield className="w-3 h-3 mr-1" />
+                    Este usuário verá apenas informações do <strong>{selectedCondoName}</strong>.
+                  </p>
                 )}
+              </div>
+
+              {/* Unit/Apartment & Block */}
+              {isResident && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Bloco / Torre</label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-slate-900 dark:text-white"
+                        placeholder="Ex: Bloco A"
+                        value={formData.block || ''}
+                        onChange={e => setFormData({ ...formData, block: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Unidade / Apto</label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-slate-900 dark:text-white"
+                        placeholder="Ex: 104"
+                        value={formData.unitId || ''}
+                        onChange={e => setFormData({ ...formData, unitId: e.target.value })}
+                      />
+                      <MapPin className="absolute right-3 top-2.5 w-4 h-4 text-slate-400 pointer-events-none" />
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="mt-6 flex justify-end space-x-3 pt-4 border-t border-slate-100 dark:border-slate-700">

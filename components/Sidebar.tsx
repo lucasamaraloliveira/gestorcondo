@@ -1,16 +1,12 @@
 import React, { useState } from 'react';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, Building2, Users, Settings, LogOut, ShieldCheck, ChevronLeft, ChevronRight, DollarSign, Sun, Moon, Calendar, Armchair, Headphones, KeyRound, FolderOpen, Gavel, ShoppingBag } from 'lucide-react';
-import { User, RolePermissions, UserRole } from '../types';
 import { APP_MODULES } from '../constants';
+import { useAuthStore } from '../store/useAuthStore';
+import { useUIStore } from '../store/useUIStore';
+import { useDataStore } from '../store/useDataStore';
 
 interface SidebarProps {
-    currentUser: User;
-    activePage: string;
-    onNavigate: (page: string) => void;
-    onLogout: () => void;
-    theme: 'light' | 'dark';
-    toggleTheme: () => void;
-    rolePermissions: RolePermissions;
     isMobileOpen?: boolean;
     onCloseMobile?: () => void;
 }
@@ -32,23 +28,27 @@ const iconMap: Record<string, any> = {
 };
 
 const Sidebar: React.FC<SidebarProps> = ({
-    currentUser,
-    activePage,
-    onNavigate,
-    onLogout,
-    theme,
-    toggleTheme,
-    rolePermissions,
     isMobileOpen = false,
     onCloseMobile
 }) => {
+    const navigate = useNavigate();
+    const { currentUser, logout } = useAuthStore();
+    const { theme, toggleTheme } = useUIStore();
+    const { rolePermissions } = useDataStore();
     const [isCollapsed, setIsCollapsed] = useState(false);
+
+    if (!currentUser) return null;
 
     // Get allowed modules for current user role
     const allowedModules = rolePermissions[currentUser.role] || [];
 
     // Filter APP_MODULES based on permissions
     const filteredMenu = APP_MODULES.filter(module => allowedModules.includes(module.id) && module.id !== 'settings');
+
+    const handleLogout = () => {
+        logout();
+        navigate('/login');
+    };
 
     // Determine sidebar content structure
     const sidebarContent = (
@@ -73,13 +73,14 @@ const Sidebar: React.FC<SidebarProps> = ({
                     const isCollapsedMode = isCollapsed && !isMobileOpen;
 
                     return (
-                        <button
+                        <NavLink
                             key={item.id}
+                            to={`/${item.id}`}
                             id={`nav-${item.id}`} // Added ID for Tour Targeting
-                            onClick={() => onNavigate(item.id)}
                             title={isCollapsedMode ? item.label : ''}
-                            className={`flex w-full rounded-xl transition-all duration-300 group relative 
-                                ${activePage === item.id
+                            onClick={onCloseMobile}
+                            className={({ isActive }) => `flex w-full rounded-xl transition-all duration-300 group relative 
+                                ${isActive
                                     ? 'bg-blue-600 shadow-lg shadow-blue-600/20 text-white'
                                     : 'text-slate-400 hover:bg-white/10 hover:text-white'} 
                                 ${isCollapsedMode
@@ -90,7 +91,8 @@ const Sidebar: React.FC<SidebarProps> = ({
                                 ${isCollapsedMode
                                     ? 'w-6 h-6'
                                     : 'w-5 h-5 mr-3'} 
-                                ${activePage === item.id ? 'text-white' : 'text-slate-500 group-hover:text-white'}`}
+                                ${item.id === 'settings' ? 'group-hover:rotate-45' : ''} 
+                            `}
                             />
 
                             <span className={`transition-all duration-300 transform origin-left
@@ -99,15 +101,10 @@ const Sidebar: React.FC<SidebarProps> = ({
                                     : 'text-base font-medium whitespace-nowrap w-auto opacity-100'}`}>
                                 {isCollapsedMode ? (item.shortLabel || item.label) : item.label}
                             </span>
-
-                            {activePage === item.id && !isCollapsedMode && (
-                                <div className="ml-auto w-1.5 h-1.5 rounded-full bg-white shadow-glow" />
-                            )}
-                        </button>
+                        </NavLink>
                     );
                 })}
             </div>
-
 
         </div>
     );
